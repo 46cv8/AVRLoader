@@ -93,8 +93,12 @@ class JobInfo():
 			for (x, y) in optlist:
 				if x == '--af':
 					self.flash_start_address, self.flash_end_address = y.split(':')
+					self.flash_start_address = int(self.flash_start_address, 16)
+					self.flash_end_address = int(self.flash_end_address, 16)
 				elif x == '--ae':
 					self.eeprom_start_address, self.eeprom_end_address = y.split(':')
+					self.eeprom_start_address = int(self.eeprom_start_address, 16)
+					self.eeprom_end_address = int(self.eeprom_end_address, 16)
 				elif x == '-b':
 					if y == 'h':
 						self.get_hw_revision = True
@@ -377,6 +381,13 @@ class JobInfo():
 			   hexf.get_range_end() < self.flash_start_address:
 				raise RuntimeError('Hex file defines data outside specified range.')
 
+			# Added this as it was the only way to get it to honor the flash_start_address and flash_end_address, otherwise it would defer to the hexfiles address range which would erase the bootloader
+			if hexf.get_range_start() < self.flash_start_address or \
+			   hexf.get_range_end() > self.flash_end_address:
+				avrlog.avrlog(avrlog.LOG_INFO, f'Updating HexFile used range to {self.flash_start_address} through {self.flash_end_address}...')
+				hexf.set_used_range(self.flash_start_address,
+				                   self.flash_end_address)
+
 			if self.memory_fill_pattern == -1:
 
 				if hexf.get_range_start() > self.flash_start_address:
@@ -612,62 +623,62 @@ class JobInfo():
 
 	def usage(self):
 
-		print "Command Line Switches:"
-		print "        [-d device name] [--if infile] [--ie infile] [--of outfile]"
-		print "        [--oe outfile] [-s] [-O index] [--O# value] [--Sf addr] [--Se addr]"
-		print "        [-e] [--p[f|e|b]] [--r[f|e|b]] [--v[f|e|b]] [-l value] [-L value]"
-		print "        [-y] [-f value] [-E value] [-F value] [-G value] [-q] [-x value]"
-		print "        [--af start:stop] [--ae start:stop] [-c port] [-b h|s] [-g] [-z]"
-		print "        [-Y] [-n] [-h|?]"
-		print ""
-		print "Parameters:"
-		print "-d      Device name. Must be applied when programming the device."
-		print "--if    Name of FLASH input file. Required for programming or verification"
-		print "        of the FLASH memory. The file format is Intel Extended HEX."
-		print "--ie    Name of EEPROM input file. Required for programming or verification"
-		print "        of the EEPROM memory. The file format is Intel Extended HEX."
-		print "--of    Name of FLASH output file. Required for readout of the FLASH memory."
-		print "        The file format is Intel Extended HEX."
-		print "--oe    Name of EEPROM output file. Required for readout of the EEPROM"
-		print "        memory. The file format is Intel Extended HEX."
-		print "-s      Read signature bytes."
-		print "-O      Read oscillator calibration byte. 'index' is optional."
-		print "--O#    User-defined oscillator calibration value."
-		print "--Sf    Write oscillator cal. byte to FLASH memory. 'addr' is byte address."
-		print "--Se    Write oscillator cal. byte to EEPROM memory. 'addr' is byte address."
-		print "-e      Erase device. If applied with another programming parameter, the"
-		print "        device will be erased before any other programming takes place."
-		print "-p      Program device; FLASH (f), EEPROM (e) or both (b). Corresponding"
-		print "        input files are required."
-		print "-r      Read out device; FLASH (f), EEPROM (e) or both (b). Corresponding"
-		print "        output files are required"
-		print "-v      Verify device; FLASH (f), EEPROM (e) or both (b). Can be used with"
-		print "        -p or alone. Corresponding input files are required."
-		print "-l      Set lock byte. 'value' is an 8-bit hex. value."
-		print "-L      Verify lock byte. 'value' is an 8-bit hex. value to verify against."
-		print "-y      Read back lock byte."
-		print "-f      Set fuse bytes. 'value' is a 16-bit hex. value describing the"
-		print "        settings for the upper and lower fuse bytes."
-		print "-E      Set extended fuse byte. 'value' is an 8-bit hex. value describing the"
-		print "        extend fuse settings."
-		print "-F      Verify fuse bytes. 'value' is a 16-bit hex. value to verify against."
-		print "-G      Verify extended fuse byte. 'value' is an 8-bit hex. value to"
-		print "        verify against."
-		print "-q      Read back fuse bytes."
-		print "-n      Send/receive encrypted hex files."
-		print "-x      Fill unspecified locations with a value (00-ff). The default is"
-		print "        to not program locations not specified in the input files."
-		print "--af    FLASH address range. Specifies the address range of operations. The"
-		print "        default is the entire FLASH. Byte addresses in hex."
-		print "--ae    EEPROM address range. Specifies the address range of operations."
-		print "        The default is the entire EEPROM. Byte addresses in hex."
-		print "-c      Select communication port; 'COM1' to 'COM8', '/dev/tty0', /dev/ttyUSB0."
-		print "        Deprecated: It is suggested to use settings in the configuration file."
-		print "-b      Get revisions; hardware revision (h) and software revision (s)."
-		print "-g      Silent operation."
-		print "-z      No progress indicator. E.g. if piping to a file for log purposes."
-		print "-Y      Calibrate internal RC oscillator(AVR057). 'addr' is byte address"
-		print "        this option to avoid the characters used for the indicator."
-		print "-h|-?   Help information (overrides all other settings)."
-		print ""
+		print("Command Line Switches:")
+		print("        [-d device name] [--if infile] [--ie infile] [--of outfile]")
+		print("        [--oe outfile] [-s] [-O index] [--O# value] [--Sf addr] [--Se addr]")
+		print("        [-e] [--p[f|e|b]] [--r[f|e|b]] [--v[f|e|b]] [-l value] [-L value]")
+		print("        [-y] [-f value] [-E value] [-F value] [-G value] [-q] [-x value]")
+		print("        [--af start:stop] [--ae start:stop] [-c port] [-b h|s] [-g] [-z]")
+		print("        [-Y] [-n] [-h|?]")
+		print("")
+		print("Parameters:")
+		print("-d      Device name. Must be applied when programming the device.")
+		print("--if    Name of FLASH input file. Required for programming or verification")
+		print("        of the FLASH memory. The file format is Intel Extended HEX.")
+		print("--ie    Name of EEPROM input file. Required for programming or verification")
+		print("        of the EEPROM memory. The file format is Intel Extended HEX.")
+		print("--of    Name of FLASH output file. Required for readout of the FLASH memory.")
+		print("        The file format is Intel Extended HEX.")
+		print("--oe    Name of EEPROM output file. Required for readout of the EEPROM")
+		print("        memory. The file format is Intel Extended HEX.")
+		print("-s      Read signature bytes.")
+		print("-O      Read oscillator calibration byte. 'index' is optional.")
+		print("--O#    User-defined oscillator calibration value.")
+		print("--Sf    Write oscillator cal. byte to FLASH memory. 'addr' is byte address.")
+		print("--Se    Write oscillator cal. byte to EEPROM memory. 'addr' is byte address.")
+		print("-e      Erase device. If applied with another programming parameter, the")
+		print("        device will be erased before any other programming takes place.")
+		print("-p      Program device; FLASH (f), EEPROM (e) or both (b). Corresponding")
+		print("        input files are required.")
+		print("-r      Read out device; FLASH (f), EEPROM (e) or both (b). Corresponding")
+		print("        output files are required")
+		print("-v      Verify device; FLASH (f), EEPROM (e) or both (b). Can be used with")
+		print("        -p or alone. Corresponding input files are required.")
+		print("-l      Set lock byte. 'value' is an 8-bit hex. value.")
+		print("-L      Verify lock byte. 'value' is an 8-bit hex. value to verify against.")
+		print("-y      Read back lock byte.")
+		print("-f      Set fuse bytes. 'value' is a 16-bit hex. value describing the")
+		print("        settings for the upper and lower fuse bytes.")
+		print("-E      Set extended fuse byte. 'value' is an 8-bit hex. value describing the")
+		print("        extend fuse settings.")
+		print("-F      Verify fuse bytes. 'value' is a 16-bit hex. value to verify against.")
+		print("-G      Verify extended fuse byte. 'value' is an 8-bit hex. value to")
+		print("        verify against.")
+		print("-q      Read back fuse bytes.")
+		print("-n      Send/receive encrypted hex files.")
+		print("-x      Fill unspecified locations with a value (00-ff). The default is")
+		print("        to not program locations not specified in the input files.")
+		print("--af    FLASH address range. Specifies the address range of operations. The")
+		print("        default is the entire FLASH. Byte addresses in hex.")
+		print("--ae    EEPROM address range. Specifies the address range of operations.")
+		print("        The default is the entire EEPROM. Byte addresses in hex.")
+		print("-c      Select communication port; 'COM1' to 'COM8', '/dev/tty0', /dev/ttyUSB0.")
+		print("        Deprecated: It is suggested to use settings in the configuration file.")
+		print("-b      Get revisions; hardware revision (h) and software revision (s).")
+		print("-g      Silent operation.")
+		print("-z      No progress indicator. E.g. if piping to a file for log purposes.")
+		print("-Y      Calibrate internal RC oscillator(AVR057). 'addr' is byte address")
+		print("        this option to avoid the characters used for the indicator.")
+		print("-h|-?   Help information (overrides all other settings).")
+		print("")
 

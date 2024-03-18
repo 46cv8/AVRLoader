@@ -4,7 +4,7 @@
 	AVR Loader main
 """
 import sys
-import ConfigParser
+import configparser
 import traceback
 import avrlog
 from job_info import *
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 	else:
 		home_dir = sys.argv[0][:slash_pos]
 
-	parser = ConfigParser.ConfigParser()
+	parser = configparser.ConfigParser()
 	cfg_file_name = '%s%savrloader.cfg' % (home_dir, os.sep)
 	parser.read(cfg_file_name)
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 			timeout = parser.getfloat('Communication', 'timeout')
 			j.set_comms(device, baud, timeout)
 		j.do_job()
-	except RuntimeError, r_exc:
+	except RuntimeError as r_exc:
 		avrlog.avrlog(avrlog.LOG_ERR, r_exc.message)
 	except:
 		avrlog.avrlog(avrlog.LOG_ERR, traceback.format_exc().replace('\n', '; '))

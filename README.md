@@ -1,3 +1,7 @@
+# Notes
+Updated to work with Python3 and fixed issue with address ranges for programming not taking effect if hexfile had larger address range.
+There may be issues with this as I have only tested basic functionality like reading and programming flash and eeprom.
+
 # AVRLoader
 AVR Open Source Bootloader Programmer  
   

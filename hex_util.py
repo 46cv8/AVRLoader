@@ -8,6 +8,8 @@ import avrlog
 import types
 import array
 
+HEX_RECORD_LENGTH = 32
+
 class HexRecord():
 	"""
 		HexRecord class.
@@ -19,7 +21,7 @@ class HexRecord():
 		self._offset = -1
 		self._type = -1
 		self._checksum = -1
-		self._data = bytearray(chr(0xff) * 16)
+		self._data = bytearray(chr(0xff).encode('iso-8859-1') * HEX_RECORD_LENGTH)
 
 
 	def set_length(self, length):
@@ -89,7 +91,7 @@ class HexRecord():
 
 		self._checksum = 0 - self._checksum
 		self._checksum = (self._checksum & 0xff)
-
+		
 		return self._checksum
 
 
@@ -127,7 +129,7 @@ class HexRecord():
 		bdata = binascii.a2b_hex(adata)
 		j = 0
 		for b in bdata:
-			checksum += ord(b)
+			checksum += b
 			self._data[j] = b
 			j += 1
 
@@ -189,15 +191,15 @@ class EncryptedHexRecord(HexRecord):
 			raise RuntimeError('Incorrect Hex file format, does not start with a colon. ' +
 			                   'Line from file (%s)' % (hex_line.strip()))
 
-		length = long(hex_line[1:5], 16)
-		offset = long(hex_line[5:9], 16)
+		length = int(hex_line[1:5], 16)
+		offset = int(hex_line[5:9], 16)
 		v = [length, offset]
-		self._length, self._offset = xtea.decipher(v, 0xffffL)
+		self._length, self._offset = xtea.decipher(v, 0xffff)
 
-		rtype = long(hex_line[9:13], 16)
-		tmp = long(hex_line[13:17], 16)
+		rtype = int(hex_line[9:13], 16)
+		tmp = int(hex_line[13:17], 16)
 		v = [rtype, tmp]
-		self._type, tmp = xtea.decipher(v, 0xffffL)
+		self._type, tmp = xtea.decipher(v, 0xffff)
 
 		if len(hex_line) < (self._length * 4 + 25):
 			raise RuntimeError('Incorrect Hex file format, missing field. ' +
@@ -213,23 +215,23 @@ class EncryptedHexRecord(HexRecord):
 		for i in range(0, len(adata), 8):
 			pair = adata[i:i+8]
 
-			d1 = long(pair[0:4], 16)
-			d2 = long(pair[4:8], 16)
+			d1 = int(pair[0:4], 16)
+			d2 = int(pair[4:8], 16)
 
 			v = [d1, d2]
 
-			l0, l1 = xtea.decipher(v, 0xffffL)
-			self._data[j] = chr(l0 & 0xff)
+			l0, l1 = xtea.decipher(v, 0xffff)
+			self._data[j] = chr(l0 & 0xff).encode('iso-8859-1')
 			j += 1
 			if j < self._length:
-				self._data[j] = chr(l1 & 0xff)
+				self._data[j] = chr(l1 & 0xff).encode('iso-8859-1')
 				j += 1
 
 		chk = hex_line.strip()[-8:]
-		d1 = long(chk[0:4], 16)
-		d2 = long(chk[4:8], 16)
+		d1 = int(chk[0:4], 16)
+		d2 = int(chk[4:8], 16)
 		v = [d1, d2]
-		v0, tmp = xtea.decipher(v, 0xffffL)
+		v0, tmp = xtea.decipher(v, 0xffff)
 
 		checksum = v0 & 0xff
 
@@ -248,27 +250,27 @@ class EncryptedHexRecord(HexRecord):
 		if self._checksum == -1:
 			checksum = self.checksum()
 
-		v = [long(self._length), long(self._offset)]
-		v0, v1 = xtea.encipher(v, 0xffffL)
+		v = [int(self._length), int(self._offset)]
+		v0, v1 = xtea.encipher(v, 0xffff)
 		result = ':%04X%04X' % (v0, v1)
-		v[0] = long(self._type)
-		v[1] = 0xffL
-		v0, v1 = xtea.encipher(v, 0xffffL)
+		v[0] = int(self._type)
+		v[1] = 0xff
+		v0, v1 = xtea.encipher(v, 0xffff)
 		result += '%04X%04X' % (v0, v1)
 
 		for i in range(0, self._length, 2):
 			try:
-				v = [long(self._data[i]), long(self._data[i+1])]
-				v0, v1 = xtea.encipher(v, 0xffffL)
+				v = [int(self._data[i]), int(self._data[i+1])]
+				v0, v1 = xtea.encipher(v, 0xffff)
 				result += '%04X%04X' % (v0, v1)
 			except IndexError:
-				v = [self._data[-1], 0xffL]
-				v0, v1 = xtea.encipher(v, 0xffffL)
+				v = [self._data[-1], 0xff]
+				v0, v1 = xtea.encipher(v, 0xffff)
 				result += '%04X%04X' % (v0, v1)
 
-		v[0] = long(self._checksum)
-		v[1] = 0xffL
-		v0, v1 = xtea.encipher(v, 0xffffL)
+		v[0] = int(self._checksum)
+		v[1] = 0xff
+		v0, v1 = xtea.encipher(v, 0xffff)
 		result += '%04X%04X' % (v0, v1)
 
 		return result
@@ -282,7 +284,7 @@ class HexFile():
 
 	def __init__(self, buffersize, value=0xff):
 
-		self.__data = bytearray(chr((value & 0xff)) * buffersize)
+		self.__data = bytearray(chr((value & 0xff)).encode('iso-8859-1') * buffersize)
 		self.__start = -1
 		self.__end = -1
 		self.__size = buffersize
@@ -290,7 +292,8 @@ class HexFile():
 
 	def _write_record(self, fp, hex_rec):
 
-		fp.write('%02X\n' % str(hex_rec))
+		#fp.write('%02X\n' % str(hex_rec))
+		fp.write('%s\n' % str(hex_rec))
 
 
 	def _parse_record(self, hex_line):	# returns HexRecord
@@ -360,6 +363,7 @@ class HexFile():
 		rec.set_type(0x02)
 		rec._data[1] = 0x00
 		rec._data[0] = base_address >> 12
+		rec.checksum()
 		self._write_record(fp, rec)
 
 		rec = HexRecord()
@@ -374,7 +378,7 @@ class HexFile():
 			#	data record full or
 			#	end of used range reached
 			if self._offset + data_pos >= 0x10000 or \
-			   data_pos >= 16 or \
+			   data_pos >= HEX_RECORD_LENGTH or \
 			   base_address + self._offset + data_pos > self.__end:
 				rec.set_length(data_pos)
 				rec.set_offset(self._offset)
@@ -382,7 +386,8 @@ class HexFile():
 
 				if data_pos % 256 == 0:
 					avrlog.progress('.')
-
+					
+				rec.checksum()
 				self._write_record(fp, rec)
 
 				self._offset += data_pos
@@ -402,6 +407,7 @@ class HexFile():
 				rec._data[0] = base_address >> 12
 				rec._data[1] = 0x00
 
+				rec.checksum()
 				self._write_record(fp, rec)
 
 		# write EOF record
@@ -409,6 +415,7 @@ class HexFile():
 		rec.set_offset(0)
 		rec.set_type(0x01)
 
+		rec.checksum()
 		self._write_record(fp, rec)
 
 		fp.close()
@@ -427,7 +434,7 @@ class HexFile():
 	def clear_all(self, value=0xff):
 
 		for i in range(0, self.__size):
-			self.__data[i] = chr((value & 0xff))
+			self.__data[i] = chr((value & 0xff)).encode('iso-8859-1')
 
 
 	def get_range_start(self):
@@ -449,7 +456,7 @@ class HexFile():
 
 	def set_data(self, address, value):
 
-		if type(value) != types.StringType or len(value) != 1:
+		if type(value) != bytes or len(value) != 1:
 			raise RuntimeError('HexFile.set_data() invalid value.')
 
 		if address < 0 or address >= self.__size:
@@ -488,7 +495,7 @@ class EncryptedHexFile(HexFile):
 	def _add_record(self, ehex_rec):
 
 		self.__records[ehex_rec.get_offset()] = ehex_rec
-		self.__keys = self.__records.keys()
+		self.__keys = list(self.__records.keys())
 		self.__keys.sort()
 
 
@@ -581,7 +588,7 @@ class EncryptedHexFile(HexFile):
 
 		# TODO
 		for i in range(0, self.__size):
-			self.__data[i] = chr((value & 0xff))
+			self.__data[i] = chr((value & 0xff)).encode('iso-8859-1')
 
 
 	def get_range_start(self):
@@ -618,13 +625,13 @@ class EncryptedHexFile(HexFile):
 
 		try:
 			return rec._data[offset]
-		except Exception, exc:
+		except Exception as exc:
 			raise RuntimeError('EncryptedHexFile.get_data: %s' % exc.message)
 
 
 	def set_data(self, address, value):
 
-		if type(value) != types.StringType or len(value) != 1:
+		if type(value) != bytes or len(value) != 1:
 			raise RuntimeError('HexFile.set_data() invalid value.')
 
 		if address < 0 or address >= self.__size:
@@ -634,7 +641,7 @@ class EncryptedHexFile(HexFile):
 
 		try:
 			rec._data[offset] = value
-		except Exception, exc:
+		except Exception as exc:
 			raise RuntimeError('EncryptedHexFile.set_data: %s' % exc.message)
 
 
@@ -682,10 +689,10 @@ if __name__ == "__main__":
 
 	ehf = EncryptedHexFile(32768)
 	ehf.read_file(out_name)
-	print 'read address      0: 0x%02X' % ehf.get_data(0)
-	print 'read address 0x00af: 0x%02X' % ehf.get_data(0x00af)
-	print 'read address 0x74fe: 0x%02X' % ehf.get_data(0x74fe)
-	print 'read address 0x75a0: 0x%02X' % ehf.get_data(0x75a0)
-	print 'read address 0x75af: 0x%02X' % ehf.get_data(0x75af)
-	print 'read address 0x7fff: 0x%02X' % ehf.get_data(0x7fff)
+	print('read address      0: 0x%02X' % ehf.get_data(0))
+	print('read address 0x00af: 0x%02X' % ehf.get_data(0x00af))
+	print('read address 0x74fe: 0x%02X' % ehf.get_data(0x74fe))
+	print('read address 0x75a0: 0x%02X' % ehf.get_data(0x75a0))
+	print('read address 0x75af: 0x%02X' % ehf.get_data(0x75af))
+	print('read address 0x7fff: 0x%02X' % ehf.get_data(0x7fff))
 

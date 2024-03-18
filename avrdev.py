@@ -201,22 +201,22 @@ if __name__ == "__main__":
 		device = AVRDevice(dev_name)
 		device.read_avr_parameters(path)
 
-		print device.get_device_name()
+		print(device.get_device_name())
 
 		sig0, sig1, sig2 = device.get_signature()
-		print '\t  Signature:\t%02X %02X %02X' % (sig0, sig1, sig2)
+		print('\t  Signature:\t%02X %02X %02X' % (sig0, sig1, sig2))
 
-		print '\t Flash size:\t%d' % device.get_flash_size()
+		print('\t Flash size:\t%d' % device.get_flash_size())
 
-		print '\t  Page size:\t%d (%d bytes)' % \
-		      (device.get_page_size(), device.get_page_size() * 2)
+		print('\t  Page size:\t%d (%d bytes)' % \
+		      (device.get_page_size(), device.get_page_size() * 2))
 
-		print '\t  NRWW size:\t%d' % device.get_nrww_size()
+		print('\t  NRWW size:\t%d' % device.get_nrww_size())
 
-		print '\t NRWW pages:\t%d' % device.get_nrww_pages()
+		print('\t NRWW pages:\t%d' % device.get_nrww_pages())
 
-		print '\tTotal pages:\t%d' % device.get_total_pages()
+		print('\tTotal pages:\t%d' % device.get_total_pages())
 	else:
-		print '%s -d device_name -p search_path' % os.path.basename(sys.argv[0])
+		print('%s -d device_name -p search_path' % os.path.basename(sys.argv[0]))
 
 
